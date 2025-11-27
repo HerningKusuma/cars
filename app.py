@@ -1,62 +1,51 @@
-
 import streamlit as st
 import pandas as pd
-import joblib
+import pickle
 
-st.set_page_config(
-    page_title="Prediksi Harga Mobil Premium",
-    page_icon="🚗",
-    layout="wide"
-)
+# Load trained Random Forest Regression model
+with open("random_forest_regression_model.pkl", "rb") as file:
+    model = pickle.load(file)
 
-# ======================
-#  Load Model
-# ======================
-@st.cache_resource
-def load_model():
-    return joblib.load("model_car_price.pkl")
+# Title
+st.title("🚗 Prediksi Harga Mobil")
+st.write("Masukkan spesifikasi mobil untuk memprediksi harganya.")
 
-model = load_model()
+# Sidebar Input
+st.sidebar.header("Input Fitur Mobil")
 
-# ======================
-#  Header
-# ======================
-st.title("🚗 Prediksi Harga Mobil — Premium Edition")
-st.write("Masukkan spesifikasi mobil untuk mendapatkan prediksi harga.")
+def user_input():
+    wheelbase = st.sidebar.slider("Wheelbase (mm)", 80.0, 130.0, 100.0)
+    carlength = st.sidebar.slider("Car Length (mm)", 120.0, 200.0, 150.0)
+    carwidth = st.sidebar.slider("Car Width (mm)", 50.0, 90.0, 65.0)
+    curbweight = st.sidebar.slider("Curb Weight (kg)", 1000, 5000, 2000)
+    enginesize = st.sidebar.slider("Engine Size (cc)", 50, 500, 150)
+    boreratio = st.sidebar.slider("Bore Ratio", 2.0, 5.0, 3.0)
+    horsepower = st.sidebar.slider("Horsepower", 40, 300, 100)
+    citympg = st.sidebar.slider("City MPG", 5, 60, 25)
+    highwaympg = st.sidebar.slider("Highway MPG", 5, 70, 30)
 
-# ======================
-#  Sidebar Input
-# ======================
-st.sidebar.header("Input Spesifikasi Mobil")
+    data = {
+        "wheelbase": wheelbase,
+        "carlength": carlength,
+        "carwidth": carwidth,
+        "curbweight": curbweight,
+        "enginesize": enginesize,
+        "boreratio": boreratio,
+        "horsepower": horsepower,
+        "citympg": citympg,
+        "highwaympg": highwaympg
+    }
 
-year = st.sidebar.slider("Tahun Produksi", 1990, 2024, 2015)
-mileage = st.sidebar.slider("Jarak Tempuh (km)", 0, 300000, 50000)
-enginesize = st.sidebar.slider("Kapasitas Mesin (CC)", 600, 6000, 1500)
-fueltype = st.sidebar.selectbox("Jenis Bahan Bakar", ["gas", "diesel"])
-aspiration = st.sidebar.selectbox("Tipe Mesin", ["std", "turbo"])
-brand = st.sidebar.selectbox(
-    "Merek Mobil",
-    ["toyota", "honda", "bmw", "audi", "mercedes", "hyundai", "nissan", "volkswagen"]
-)
+    df = pd.DataFrame(data, index=[0])
+    return df
 
-# ======================
-#  Dataframe Input
-# ======================
-input_df = pd.DataFrame([{
-    "year": year,
-    "mileage": mileage,
-    "enginesize": enginesize,
-    "fueltype": fueltype,
-    "aspiration": aspiration,
-    "brand": brand
-}])
+df_input = user_input()
 
-st.subheader("📋 Spesifikasi Mobil")
-st.table(input_df)
+st.subheader("📌 Input Anda:")
+st.write(df_input)
 
-# ======================
-#  Prediction
-# ======================
-if st.sidebar.button("🔮 Prediksi Harga Mobil"):
-    prediction = model.predict(input_df)[0]
-    st.success(f"💰 Harga Mobil Diprediksi: **Rp {prediction:,.2f}**")
+# Predict
+if st.sidebar.button("Prediksi Harga Mobil"):
+    prediction = model.predict(df_input)
+    st.subheader("💰 Prediksi Harga Mobil:")
+    st.success(f"Rp {prediction[0]:,.2f}")
